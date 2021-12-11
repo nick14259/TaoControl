@@ -1,24 +1,54 @@
 from flask import Flask
-from flask_restplus import Api, Resource, fields
+from flask_restx import Api, Resource, fields
 import RPi.GPIO as GPIO
-
+import os
+import glob
+import time
 
 app = Flask(__name__)
 api = Api(app,
           version='1.0',
-          title='RESTful Pi',
-          description='A RESTful API to control the GPIO pins of a Raspbery Pi',
+          title='Tao Control Center',
+          description="Controls for Tao's systems",
           doc='/docs')
 
-ns = api.namespace('pins', description='Pin related operations')
+ns = api.namespace('devices', description='Device related operations')
 
 pin_model = api.model('pins', {
     'id': fields.Integer(readonly=True, description='The pin unique identifier'),
     'pin_num': fields.Integer(required=True, description='GPIO pin associated with this endpoint'),
-    'color': fields.String(required=True, description='LED color'),
+    'name': fields.String(required=True, description='Name of device on this pin'), 
     'state': fields.String(required=True, description='LED on or off')
 })
 
+host = "0.0.0.0"
+port = '8090'
+
+os.system('modprobe w1-gpio')
+os.system('modprobe w1-therm')
+
+base_dir = '/sys/bus/w1/devices/'
+device_folder = glob.glob(base_dir + '28*')[0]
+device_file = device_folder + '/w1_slave'
+
+@ns.route("/temp")
+class Temp(Resource):
+
+    def get(self):
+    	f = open(device_file, 'r')
+    	lines = f.readlines()
+    	f.close()
+    	while lines[0].strip()[-3:] != 'YES':
+        	time.sleep(0.2)
+        	lines = f.readlines()
+        	f.close()
+    	equals_pos = lines[1].find('t=')
+    	if equals_pos != -1:
+        	temp_string = lines[1][equals_pos+2:]
+        	temp_c = float(temp_string) / 1000.0
+        	temp_f = temp_c * 9.0 / 5.0 + 32.0
+        	d = {'temp_c': temp_c, 'temp_f': temp_f, 'hot': ('true' if temp_f>160 else 'false')}
+        	return d
 
 class PinUtil(object):
     def __init__(self):
@@ -111,16 +141,12 @@ class Pin(Resource):
 GPIO.setmode(GPIO.BCM)
 
 pin_util = PinUtil()
-pin_util.create({'pin_num': 23, 'color': 'red', 'state': 'off'})
-pin_util.create({'pin_num': 24, 'color': 'yellow', 'state': 'off'})
-pin_util.create({'pin_num': 25, 'color': 'blue', 'state': 'off'})
-pin_util.create({'pin_num': 22, 'color': 'red', 'state': 'off'})
-pin_util.create({'pin_num': 12, 'color': 'yellow', 'state': 'off'})
-pin_util.create({'pin_num': 16, 'color': 'blue', 'state': 'off'})
-pin_util.create({'pin_num': 20, 'color': 'red', 'state': 'off'})
-pin_util.create({'pin_num': 21, 'color': 'green', 'state': 'off'})
-pin_util.create({'pin_num': 13, 'color': 'yellow', 'state': 'off'})
+pin_util.create({'pin_num': 23, 'name': 'Temp. Relay', 'state': 'off'})
+
+#pin_util.create({'pin_num': 20, 'color': 'red', 'state': 'off'})
+#pin_util.create({'pin_num': 21, 'color': 'green', 'state': 'off'})
+#pin_util.create({'pin_num': 13, 'color': 'yellow', 'state': 'off'})
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host, port, debug=True)
