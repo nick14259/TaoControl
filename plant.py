@@ -26,8 +26,8 @@ def set_relay(state: str):
 while True:
 	time.sleep(6)
 	d = get_temp()
-	if d > 80:
+	if d > 75:
 		set_relay("off")
-	if d < 79:
+	if d < 70:
 		set_relay("on")
 
