@@ -4,7 +4,7 @@ import time
 
 from urllib.parse import urljoin
 
-HOST = 'http://192.168.1.102:8090'
+HOST = 'http://localhost:8090'
 PIN_ENDPOINT = 'devices/'
 TEMP_ENDPOINT = 'devices/temp'
 PINS = urljoin(HOST, PIN_ENDPOINT)
