@@ -1,0 +1,60 @@
+sudo nano /etc/rc.local
+
+
+source /home/pi/taocontrol/tao_env/bin/activate
+python3 /home/pi/taocontrol/app.py &
+
+
+/etc/systemd/system/
+
+
+[Unit]
+Description=Plant start service
+After=multi-user.target
+Requires=network.target
+[Service]
+Type=idle
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/taocontrol/plant.py
+Restart=always
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
