@@ -4,6 +4,8 @@ import RPi.GPIO as GPIO
 import os
 import glob
 import time
+import base64
+from picamera import PiCamera
 
 app = Flask(__name__)
 api = Api(app,
@@ -49,6 +51,27 @@ class Temp(Resource):
         	temp_f = temp_c * 9.0 / 5.0 + 32.0
         	d = {'temp_c': temp_c, 'temp_f': temp_f, 'hot': ('true' if temp_f>160 else 'false')}
         	return d
+
+
+@ns.route("/image")
+class Image(Resource):
+
+    def get(self):
+    	camera = PiCamera()
+    	camera.vflip = True
+    	camera.resolution = (800, 600)
+    	image = '/home/pi/taocontrol/Image.jpg'
+    	camera.capture(image)
+    	with open(image, 'rb') as image_file:
+    		encoded_string = base64.b64encode(image_file.read())
+    	image_64 = str(encoded_string)
+    	image_64 = image_64[2:]
+    	image_64 = image_64[:-1]
+    	d = {'image_string': image_64}
+    	return d
+
+
+
 
 class PinUtil(object):
     def __init__(self):
