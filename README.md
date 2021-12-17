@@ -1,3 +1,53 @@
+## Setup
+
+Follow these steps after a fresh install of raspian.
+
+Update raspbian:
+
+- 'sudo apt-get update && sudo apt-get upgrade'
+
+Clone repo:
+
+- 'sudo git clone https://github.com/nick14259/taocontrol'
+
+Set rc.local:
+
+- 'sudo nano /etc/rc.local'
+
+Paste this in open lines:
+
+- 'source /home/pi/taocontrol/tao_env/bin/activate'
+- 'python3 /home/pi/taocontrol/app.py &'
+
+Create systemd sercive file:
+
+- 'sudo nano /etc/systemd/system/plantservice.service'
+
+Paste this in the service file:
+
+'''
+[Unit]
+Description=Plant start service
+After=multi-user.target
+Requires=network.target
+[Service]
+Type=idle
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/taocontrol/plant.py
+Restart=always
+[Install]
+WantedBy=multi-user.target
+'''
+
+Reboot the system:
+
+- 'sudo reboot'
+
+
+
+
+
+
 # RESTful Pi
 This is a Flask app written in Python3. This app is a REST API backend to control the GPIO pins of a Raspberry Pi by making HTTP requests to the `/pins` and `/pins/<id>` endpoints. This project uses a breadboard outfitted with LEDs connected to the Raspberyy Pi's GPIO pins to demonstrate the correct function of the API calls. This app could easily be extended to trigger and process more complex events to control the pins of a Pi beyond lighting up a couple LEDs.
 
