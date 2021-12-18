@@ -10,6 +10,13 @@ Clone repo:
 
 - sudo git clone https://github.com/nick14259/taocontrol
 
+Install dependencies:
+
+- cd taocontrol
+- source tao_env/bin/activate
+- sudo apt install pip
+- sudo pip3 install -r requirements.txt
+
 Set rc.local:
 
 - sudo nano /etc/rc.local
@@ -39,6 +46,8 @@ Restart=always
 WantedBy=multi-user.target
 
 Add this line in the boot config file:
+
+- sudo nano /boot/config.txt
 
 - dtoverlay=w1-gpio,gpiopin=4
 
