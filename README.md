@@ -4,28 +4,28 @@ Follow these steps after a fresh install of raspian.
 
 Update raspbian:
 
-- 'sudo apt-get update && sudo apt-get upgrade'
+- sudo apt update && sudo apt upgrade
 
 Clone repo:
 
-- 'sudo git clone https://github.com/nick14259/taocontrol'
+- sudo git clone https://github.com/nick14259/taocontrol
 
 Set rc.local:
 
-- 'sudo nano /etc/rc.local'
+- sudo nano /etc/rc.local
 
 Paste this in open lines:
 
-- 'source /home/pi/taocontrol/tao_env/bin/activate'
-- 'python3 /home/pi/taocontrol/app.py &'
+- source /home/pi/taocontrol/tao_env/bin/activate
+- python3 /home/pi/taocontrol/app.py &
 
 Create systemd sercive file:
 
-- 'sudo nano /etc/systemd/system/plantservice.service'
+- sudo nano /etc/systemd/system/plantservice.service
 
 Paste this in the service file:
 
-'''
+
 [Unit]
 Description=Plant start service
 After=multi-user.target
@@ -37,12 +37,17 @@ ExecStart=/usr/bin/python3 /home/pi/taocontrol/plant.py
 Restart=always
 [Install]
 WantedBy=multi-user.target
-'''
+
+Add this line in the boot config file:
+
+- dtoverlay=w1-gpio,gpiopin=4
+
+
+
 
 Reboot the system:
 
-- 'sudo reboot'
-
+- sudo reboot
 
 
 
