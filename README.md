@@ -43,6 +43,9 @@ Paste this in open lines:
 Create systemd sercive file:
 
 - sudo nano /etc/systemd/system/plantservice.service
+- save and exit
+- sudo systemctl daemon-reload
+- sudo systemctl enable sample.service
 
 Paste this in the service file:
 
