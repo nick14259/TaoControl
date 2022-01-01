@@ -14,6 +14,8 @@ Update raspbian:
 
 Clone repo:
 
+- sudo apt install git
+
 - sudo git clone https://github.com/nick14259/taocontrol
 
 Install dependencies:
