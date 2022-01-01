@@ -17,6 +17,12 @@ Install dependencies:
 - sudo apt install pip
 - sudo pip3 install -r requirements.txt
 
+Set up Temp. Sensor
+
+- sudo nano /boot/config.txt
+- add this to empty lines and save
+- dtoverlay=w1-gpio,gpiopin=4
+
 Set rc.local:
 
 - sudo nano /etc/rc.local
