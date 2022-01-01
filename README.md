@@ -2,6 +2,12 @@
 
 Follow these steps after a fresh install of raspian.
 
+EXPAND FILESYSTEM
+
+- sudo raspi-config
+- advanced>expand filesystem
+- reboot
+
 Update raspbian:
 
 - sudo apt update && sudo apt upgrade
