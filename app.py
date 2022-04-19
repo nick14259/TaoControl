@@ -10,166 +10,82 @@ from picamera import PiCamera
 app = Flask(__name__)
 api = Api(app,
           version='1.0',
-          title='Tao Control Center',
-          description="Controls for Tao's systems",
+          title='Used Tire Database',
+          description="Database of current used tires",
           doc='/docs')
 
-ns = api.namespace('devices', description='Device related operations')
+ns = api.namespace('tires', description='Tire operations')
 
-pin_model = api.model('pins', {
-    'id': fields.Integer(readonly=True, description='The pin unique identifier'),
-    'pin_num': fields.Integer(required=True, description='GPIO pin associated with this endpoint'),
-    'name': fields.String(required=True, description='Name of device on this pin'), 
-    'state': fields.String(required=True, description='LED on or off')
+tire = api.model('Tire', {
+    'id': fields.Integer(readonly=True, description='The tire unique identifier'),
+    'first': fields.String(required=True, description='First tire size number'),
+    'second': fields.String(required=True, description='Second tire size number'), 
+    'third': fields.String(required=True, description='Third tire size number'),
+    'desc': fields.String(required=False, description='Tire description')
+
 })
 
 host = "0.0.0.0"
 port = '8090'
 
-os.system('modprobe w1-gpio')
-os.system('modprobe w1-therm')
-
-base_dir = '/sys/bus/w1/devices/'
-device_folder = glob.glob(base_dir + '28*')[0]
-device_file = device_folder + '/w1_slave'
-
-@ns.route("/temp")
-class Temp(Resource):
-
-    def get(self):
-    	f = open(device_file, 'r')
-    	lines = f.readlines()
-    	f.close()
-    	while lines[0].strip()[-3:] != 'YES':
-        	time.sleep(0.2)
-        	lines = f.readlines()
-        	f.close()
-    	equals_pos = lines[1].find('t=')
-    	if equals_pos != -1:
-        	temp_string = lines[1][equals_pos+2:]
-        	temp_c = float(temp_string) / 1000.0
-        	temp_f = temp_c * 9.0 / 5.0 + 32.0
-        	d = {'temp_c': temp_c, 'temp_f': temp_f, 'hot': ('true' if temp_f>160 else 'false')}
-        	return d
+tireid = '1'
 
 
-@ns.route("/image")
-class Image(Resource):
-
-    def get(self):
-    	camera = PiCamera()
-    	camera.vflip = True
-    	camera.resolution = (800, 600)
-    	image = '/home/pi/taocontrol/Image.jpg'
-    	camera.capture(image)
-    	with open(image, 'rb') as image_file:
-    		encoded_string = base64.b64encode(image_file.read())
-    	image_64 = str(encoded_string)
-    	image_64 = image_64[2:]
-    	image_64 = image_64[:-1]
-    	d = {'image_string': image_64}
-    	return d
-
-
-
-
-class PinUtil(object):
+class TireClass(object):
     def __init__(self):
-        self.counter = 0
-        self.pins = []
-
+    	self.counter = 0
+    	self.tires = []
     def get(self, id):
-        for pin in self.pins:
-            if pin['id'] == id:
-                return pin
-        api.abort(404, f"pin {id} doesn't exist.")
-
+    	for tire in self.tires:
+    		if tire['id'] == id:
+    			return tire
+    	api.abort(404, "Tire {} doesn't exist".format(id))
     def create(self, data):
-        pin = data
-        pin['id'] = self.counter = self.counter + 1
-        self.pins.append(pin)
-        GPIO.setup(pin['pin_num'], GPIO.OUT)
-
-        if pin['state'] == 'off':
-            GPIO.output(pin['pin_num'], GPIO.LOW)
-        elif pin['state'] == 'on':
-            GPIO.output(pin['pin_num'], GPIO.HIGH)
-
-        return pin
-
+    	tire = data
+    	tire['id'] = self.counter = self.counter + 1
+    	self.tires.append(tire)
+    	return tire
     def update(self, id, data):
-        pin = self.get(id)
-        pin.update(data)  # this is the dict_object update method
-        GPIO.setup(pin['pin_num'], GPIO.OUT)
-
-        if pin['state'] == 'off':
-            GPIO.output(pin['pin_num'], GPIO.LOW)
-        elif pin['state'] == 'on':
-            GPIO.output(pin['pin_num'], GPIO.HIGH)
-
-        return pin
-
+    	tire = self.get(id)
+    	tire.update(data)
+    	return tire
     def delete(self, id):
-        pin = self.get(id)
-        GPIO.output(pin['pin_num'], GPIO.LOW)
-        self.pins.remove(pin)
+    	tire = self.get(id)
+    	self.tires.remove(tire)
 
+DAO = TireClass()
 
-@ns.route('/')  # keep in mind this our ns-namespace (pins/)
-class PinList(Resource):
-    """Shows a list of all pins, and lets you POST to add new pins"""
+@ns.route("/")
+class Tires(Resource):
 
-    @ns.marshal_list_with(pin_model)
+    @ns.doc('list_tires')
+    @ns.marshal_list_with(tire)
     def get(self):
-        """List all pins"""
-        return pin_util.pins
+    	return DAO.tires
 
-    @ns.expect(pin_model)
-    @ns.marshal_with(pin_model, code=201)
+    @ns.doc('create_tire')
+    @ns.expect(tire)
+    @ns.marshal_with(tire, code=201)
     def post(self):
-        """Create a new pin"""
-        return pin_util.create(api.payload)
-
+    	return DAO.create(api.payload), 201
 
 @ns.route('/<int:id>')
-@ns.response(404, 'pin not found')
-@ns.param('id', 'The pin identifier')
-class Pin(Resource):
-    """Show a single pin item and lets you update/delete them"""
-
-    @ns.marshal_with(pin_model)
+@ns.response(404, 'Tire not found')
+@ns.param('id', 'The tire identifier')
+class Tire(Resource):
+    @ns.doc('get_tire')
+    @ns.marshal_with(tire)
     def get(self, id):
-        """Fetch a pin given its resource identifier"""
-        return pin_util.get(id)
-
-    @ns.response(204, 'pin deleted')
+    	return DAO.get(id)
+    @ns.doc('delete_tire')
+    @ns.response(204, 'Tire Deleted')
     def delete(self, id):
-        """Delete a pin given its identifier"""
-        pin_util.delete(id)
-        return '', 204
-
-    @ns.expect(pin_model, validate=True)
-    @ns.marshal_with(pin_model)
+    	DAO.delete(id)
+    	return '', 204
+    @ns.expect(tire)
+    @ns.marshal_with(tire)
     def put(self, id):
-        """Update a pin given its identifier"""
-        return pin_util.update(id, api.payload)
-    
-    @ns.expect(pin_model)
-    @ns.marshal_with(pin_model)
-    def patch(self, id):
-        """Partially update a pin given its identifier"""
-        return pin_util.update(id, api.payload)
-
-
-GPIO.setmode(GPIO.BCM)
-
-pin_util = PinUtil()
-pin_util.create({'pin_num': 23, 'name': 'Temp. Relay', 'state': 'off'})
-
-#pin_util.create({'pin_num': 20, 'color': 'red', 'state': 'off'})
-#pin_util.create({'pin_num': 21, 'color': 'green', 'state': 'off'})
-#pin_util.create({'pin_num': 13, 'color': 'yellow', 'state': 'off'})
-
+    	return DAO.update(id, api.payload) 
 
 if __name__ == '__main__':
     app.run(host, port, debug=True)
